@@ -1,0 +1,441 @@
+<?php
+/**
+ * Copyright (c)2014-2014 heiglandreas
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIBILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * @category
+ * @author    Andreas Heigl<andreas@heigl.org>
+ * @copyright ©2014-2014 Andreas Heigl
+ * @license   http://www.opesource.org/licenses/mit-license.php MIT-License
+ * @version   0.0
+ * @since     19.12.14
+ * @link      https://github.com/heiglandreas/authLdap
+ */
+?><div class="wrap">
+    <?php if (! extension_loaded('ldap')) : ?>
+    <div class="error"><strong>Caveat:</strong> The LDAP-extension is not loaded!
+        Without that extension it is not possible to query an LDAP-Server! Please have a look
+        at <a href="http://php.net/manual/install.php">the PHP-Installation page</a>
+    </div>
+    <?php endif ?>
+    <h2>AuthLDAP Options</h2>
+    <form class="authldap-options" method="post" id="authLDAP_options" action="<?php echo $action;?>">
+        <h3 class="title">General Usage of authLDAP</h3>
+        <fieldset class="options">
+            <table class="form-table">
+                <tr>
+                    <th>
+                        <label for="authLDAPAuth">Enable Authentication via LDAP?</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPAuth" id="authLDAPAuth" value="1"<?php echo $tChecked; ?>/>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="authLDAPDebug">Debug AuthLDAP?</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPDebug" id="authLDAPDebug" value="1"<?php echo $tDebugChecked; ?>/>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="authLDAPDoNotOverwriteNonLdapUsers">Do not authenticate existing WordPress-Users</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPDoNotOverwriteNonLdapUsers" id="authLDAPDoNotOverwriteNonLdapUsers" value="1"<?php echo $tDoNotOverwriteNonLdapUsers; ?>/>
+                        <p class="description">
+                            Shall we prohibit authenticating already in WordPress created users using LDAP? If you enable this, LDAP-Users with the same user-ID
+                        as existing WordPress-Users can no longer take over the WordPress-Users account. This also means that LDAP-Users with the same User-ID as existing
+                        WordPress-Users will <strong>not</strong> be able to authenticate anymore! Accounts that have been taken over already will not be affected by this setting.
+                        </p>
+                        <p class="description">This should only be checked if you know what you are doing!</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="authLDAPCachePW">Save entered passwords in the wordpress user table?</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPCachePW" id="authLDAPCachePW" value="1"<?php echo $tPWChecked; ?>/>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="authLDAPGroupEnable">Map LDAP Groups to wordpress Roles?</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPGroupEnable" id="authLDAPGroupEnable" value="1"<?php echo $tGroupChecked; ?>/>
+                        <p class="description">
+                            Search LDAP for user's groups and map to Wordpress Roles.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+        <h3 class="title">General Server Settings</h3>
+        <fieldset class="options">
+            <table class="form-table">
+                <tr>
+                    <th>
+                        <label for="authLDAPURI">LDAP URI</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPURI" id="authLDAPURI" placeholder="LDAP-URI"
+                          class="regular-text" value="<?php echo $authLDAPURI; ?>"/>
+                        <p class="description">
+                            The <abbr title="Uniform Ressource Identifier">URI</abbr>
+                            for connecting to the LDAP-Server. This usualy takes the form
+                            <var>&lt;scheme&gt;://&lt;user&gt;:&lt;password&gt;@&lt;server&gt;/&lt;path&gt;</var>
+                            according to RFC 1738.</p>
+                        <p class="description">
+                            In this case it schould be something like
+                            <var>ldap://uid=adminuser,dc=example,c=com:secret@ldap.example.com/dc=basePath,dc=example,c=com</var>.
+                        </p>
+                        <p class="description">
+                            If your LDAP accepts anonymous login, you can ommit the user and
+                            password-Part of the URI
+                        </p>
+                        <p class="description">
+                            You can use the pseudo-schema <em>env</em> to provide your LDAP-URI from an environment-variable. So if you have your
+                            LDAP-URI in a variable called <code>LDAP_URI</code> you can enter <code>env:LDAP_URI</code> in this field and at runtime the
+                            appropriate value will be taken from the Environment-variable <code>LDAP_URI</code>. If the varialbe is not set, then the value will be empty.
+                        </p>
+                        <p class="description">
+                            You can also provide different parts of the LDP-URI from environment variables by providing
+                            <code>%env:[VARIABLENAME]%</code> within your LDAP-URI. So if you want to provide the
+                            password from an Environment-variable <code>LDAP_PASSWORD</code> your LDAP-URI looks like
+                            <code>ldap://uid=adminuser,dc=example,c=com:%env:LDAP_PASSWORD%@ldap.example.com/dc=basePath,dc=example,c=com</code>
+                        </p>
+                        <p class="description">
+                            <strong>Caveat!</strong><br/>
+                            If you are using Environment-variables for parts of the LDAP-URL then those <strong>must not</strong> be URL-Encoded!<br/>
+                            Otherwise the different parts <strong>must</strong> be URL-Encoded!
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <label for="authLDAPURISeparator">LDAP URI-Separator</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPURISeparator" id="authLDAPURISeparator" placeholder="LDAP-URI Separator"
+                               class="regular-text" value="<?php echo $authLDAPURISeparator; ?>"/>
+                        <p class="description">
+                            A separator that separates multiple LDAP-URIs from one another.
+                            You can use that feature to try to authenticate against multiple LDAP-Servers
+                            as long as they all have the same attribute-settings. The first LDAP-Server the user can
+                            authenticate against will be used to handle the user.
+                    </td>
+                </tr>
+                <tr>
+                      <th>
+                          <label for="authLDAPStartTLS" class="description">StartTLS</label>
+                      </th>
+                      <td>
+                          <input type="checkbox" name="authLDAPStartTLS" id="authLDAPStartTLS" value="1"<?php echo $tStartTLSChecked; ?>/>
+                          <p class="description">
+                              Use StartTLS for encryption of ldap connections. This setting is not to be used in combination with ldaps connections (ldap:// only).
+                          </p>
+                      </td>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPFilter" class="description">Filter</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPFilter" id="authLDAPFilter" placeholder="(uid=%s)"
+                          class="regular-text" value="<?php echo $authLDAPFilter; ?>"/>
+                        <p class="description">
+                            Please provide a valid filter that can be used for querying the
+                            <abbr title="Lightweight Directory Access Protocol">LDAP</abbr>
+                            for the correct user. For more information on this
+                            feature have a look at <a href="http://andreas.heigl.org/cat/dev/wp/authldap">http://andreas.heigl.org/cat/dev/wp/authldap</a>
+                        </p>
+                        <p class="description">
+                            This field <strong>should</strong> include the string <code>%s</code>
+                            that will be replaced with the username provided during log-in
+                        </p>
+                        <p class="description">
+                            If you leave this field empty it defaults to <strong>(uid=%s)</strong>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+
+        <h3 class="title">Settings for creating new Users</h3>
+        <fieldset class="options">
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPNameAttr">Name-Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPNameAttr" id="authLDAPNameAttr" placeholder="name"
+                          class="regular-text" value="<?php echo $authLDAPNameAttr; ?>"/><br />
+                        <p class="description">
+                            Which Attribute from the LDAP contains the Full or the First name
+                            of the user trying to log in.
+                        </p>
+                        <p class="description">
+                            This defaults to <strong>name</strong>
+                        </p>
+
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPSecName">Second Name Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPSecName" id="authLDAPSecName" placeholder=""
+                          class="regular-text" value="<?php echo $authLDAPSecName; ?>" />
+                        <p class="description">
+                            If the above Name-Attribute only contains the First Name of the
+                            user you can here specify an Attribute that contains the second name.
+                        </p>
+                        <p class="description">
+                            This field is empty by default
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPUidAttr">User-ID Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPUidAttr" id="authLDAPUidAttr" placeholder="uid"
+                          class="regular-text" value="<?php echo $authLDAPUidAttr; ?>" />
+                        <p class="description">
+                            Please give the Attribute, that is used to identify the user. This
+                            should be the same as you used in the above <em>Filter</em>-Option
+                        </p>
+                        <p class="description">
+                            This field defaults to <strong>uid</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPMailAttr">Mail Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPMailAttr" id="authLDAPMailAttr" placeholder="mail"
+                          class="regular-text" value="<?php echo $authLDAPMailAttr; ?>" />
+                        <p class="description">
+                            Which Attribute holds the eMail-Address of the user?
+                        </p>
+                        <p class="description">
+                            If more than one eMail-Address are stored in the LDAP, only the first given is used
+                        </p>
+                        <p class="description">
+                            This field defaults to <strong>mail</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPWebAttr">Web-Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPWebAttr" id="authLDAPWebAttr" placeholder=""
+                          class="regular-text" value="<?php echo $authLDAPWebAttr; ?>" />
+                        <p class="description">
+                            If your users have a personal page (URI) stored in the LDAP, it can
+                            be provided here.
+                        </p>
+                        <p class="description">
+                            This field is empty by default
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPDefaultRole">Default Role</label>
+                    </th>
+                    <td>
+                        <select name="authLDAPDefaultRole" id="authLDAPDefaultRole">
+                            <option value="" <?php echo ( $authLDAPDefaultRole == '' ? 'selected="selected"' : '' ); ?>>
+                                None (deny access)
+                            </option>
+<?php foreach ($roles->get_names() as $group => $vals) : ?>
+                            <option value="<?php echo $group; ?>" <?php echo ( $authLDAPDefaultRole == $group ? 'selected="selected"' : '' ); ?>>
+                                <?php echo $vals; ?>
+                            </option>
+<?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            Here you can select the default role for users.
+                            If you enable LDAP Groups below, they will take precedence over the Default Role.
+                        </p>
+                        <p class="description">
+                            Existing users will retain their roles unless overriden by LDAP Groups below.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+
+
+        <div id="authldaprolemapping">
+        <h3 class="title">Groups for Roles</h3>
+        <fieldset class="options">
+            <table class="form-table">
+                <tr>
+                    <th>
+                        <label for="authLDAPGroupOverUser">LDAP Groups override role of existing users?</label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="authLDAPGroupOverUser" id="authLDAPGroupOverUser" value="1"<?php echo $tGroupOverUserChecked; ?>/>
+                        <p class="description">
+                            If role determined by LDAP Group differs from existing Wordpress User's role, use LDAP Group.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPGroupBase">Group-Base</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroupBase" id="authLDAPGroupBase" placeholder=""
+                          class="regular-text" value="<?php echo $authLDAPGroupBase; ?>" />
+                        <p class="description">
+                            This is the base dn to lookup groups.
+                        </p>
+                        <p class="description">
+                            If empty the base dn of the LDAP URI will be used
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPGroupAttr">Group-Attribute</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroupAttr" id="authLDAPGroupAttr" placeholder="gidNumber"
+                          class="regular-text" value="<?php echo $authLDAPGroupAttr; ?>" />
+                        <p class="description">
+                            This is the attribute that defines the Group-ID that can be matched
+                            against the Groups defined further down
+                        </p>
+                        <p class="description">
+                            This field defaults to <strong>gidNumber</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPGroupSeparator">Group-Separator</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroupSeparator" id="authLDAPGroupSeparator" placeholder=","
+                          class="regular-text" value="<?php echo $authLDAPGroupSeparator; ?>" />
+                        <p class="description">
+                            This attribute defines the separator used for the Group-IDs listed in the
+                            Groups defined further down. This is useful if the value of Group-Attribute
+                            listed above can contain a comma (for example, when using the memberof attribute)
+                        </p>
+                        <p class="description">
+                            This field defaults to <strong>, (comma)</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPGroupFilter">Group-Filter</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroupFilter" id="authLDAPGroupFilter"
+                          placeholder="(&amp;(objectClass=posixGroup)(memberUid=%s))"
+                          class="regular-text" value="<?php echo $authLDAPGroupFilter; ?>" />
+                        <p class="description">
+                            Here you can add the filter for selecting groups for ther
+                            currentlly logged in user
+                        </p>
+                        <p class="description">
+                            The Filter should contain the string <code>%s</code> which will be replaced by
+                            the login-name of the currently logged in user
+                        </p>
+                        <p class="description">
+                            Alternatively the string <code>%dn%</code> will be replaced by the
+                            DN of the currently logged in user. This can be helpfull if
+                            group-memberships are defined with DNs rather than UIDs
+                        </p>
+                        <p class="description">This field defaults to
+                            <strong>(&amp;(objectClass=posixGroup)(memberUid=%s))</strong>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+
+        <h3 class="title">Role - group mapping</h3>
+        <fieldset class="options">
+            <p class="description">You can set multiple values per role by separating them with a coma</p>
+            <p class="description">The values are empty by default</p>
+            <table class="form-table">
+                <thead>
+                    <th scope="row">Assign this WordPress-Role</th>
+                    <th style="width:auto;">to members of this/these LDAP-Groups</th>
+                </thead>
+                <tbody>
+<?php
+    foreach ($roles->get_names() as $group => $vals) :
+        $aGroup=$authLDAPGroups[$group]; ?>
+                <tr>
+                    <th scope="row" style="width:auto; min-width: 200px;">
+                        <label for="authLDAPGroups[<?php echo $group; ?>]">
+                            <?php echo $vals; ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroups[<?php echo $group; ?>]" id="authLDAPGroups[<?php echo $group; ?>]"
+                          value="<?php echo $aGroup; ?>" />
+                    </td>
+                </tr>
+<?php endforeach; ?>
+                </tbody>
+            </table>
+        </fieldset>
+            </div>
+        <fieldset class="buttons">
+            <p class="submit">
+                <input type="submit" name="ldapOptionsSave" class="button button-primary" value="Save Changes" />
+            </p>
+        </fieldset>
+    </form>
+</div>
+
+<script type="text/javascript">
+    elem = document.getElementById('authLDAPGroupEnable');
+    if(! elem.checked) {
+        document.getElementById('authldaprolemapping').setAttribute('style', 'display:none;');
+    }
+
+    elem.addEventListener('change', function(e){
+        if(! e.target.checked) {
+            document.getElementById('authldaprolemapping').setAttribute('style', 'display:none;');
+        } else {
+            document.getElementById('authldaprolemapping').removeAttribute('style');
+        }
+    });
+
+</script>
